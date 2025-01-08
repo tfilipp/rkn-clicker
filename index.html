@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RKN Clicker v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #000 0%, #111 100%);
+            overflow: hidden;
+        }
+
+        #mainLogo {
+            width: 300px;
+            height: 300px;
+            position: fixed;
+            left: calc(50% - 150px);
+            top: calc(50% - 150px);
+            z-index: 2;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+            animation: mainSpin 6s linear infinite, pulse 2s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            touch-action: manipulation;
+        }
+
+        #mainLogo:active {
+            transform: scale(0.95);
+        }
+
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .hamburger {
+            cursor: pointer;
+            padding: 10px;
+            z-index: 1001;
+        }
+
+        .menu-container {
+            position: fixed;
+            bottom: 60px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 60px);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-container.active {
+            transform: translateX(0);
+        }
+
+        .tab-buttons {
+            display: flex;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-right: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .item {
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .item-name {
+            font-weight: 600;
+        }
+
+        .item-count {
+            font-weight: 500;
+            color: #aaa;
+        }
+
+        .item-cost {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+
+        .item-description {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .score-display {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .score-display.menu-opened {
+            top: auto;
+            bottom: 80px;
+            left: auto;
+            right: 20px;
+            transform: none;
+            background: none;
+            backdrop-filter: none;
+        }
+
+        .score-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .score-display.menu-opened::before {
+            opacity: 0;
+        }
+
+        .per-second {
+            font-size: 16px;
+            opacity: 0.7;
+        }
+
+        .floating-number {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            animation: float-up 1s forwards;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .volume-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-control input {
+            width: 100px;
+        }
+
+        .volume-control i {
+            width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .menu-container {
+                width: 100%;
+            }
+            
+            #mainLogo {
+                width: 200px;
+                height: 200px;
+                left: calc(50% - 100px);
+                top: calc(50% - 100px);
+            }
+            
+            .score-display {
+                font-size: 20px;
+            }
+            
+            .score-display.menu-opened {
+                bottom: 70px;
+                right: 10px;
+            }
+
+            .floating-number {
+                font-size: 24px;
+            }
+        }
+
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            text-align: center;
+            padding: 20px;
+            cursor: pointer;
+        }
+
+        .welcome-screen a {
+            color: #4a9eff;
+            text-decoration: none;
+        }
+
+        .welcome-screen a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes mainSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); }
+            50% { filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.8)); }
+            100% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-screen" id="welcomeScreen">
+        <h2 style="margin-bottom: 20px;">RKN CLICKER v2.0</h2>
+        <p style="margin-bottom: 10px;">
+            <a href="https://rkn.gay" target="_blank">rkn.gay</a> + 
+            <a href="https://rkn-ne-ban-pzh.ru" target="_blank">rkn-ne-ban-pzh.ru</a>
+        </p>
+        <p style="margin-bottom: 30px;">от амёбы и пачки додиков с рил менс</p>
+        <p style="opacity: 0.8;">кликните в любое место чтобы начать</p>
+    </div>
+
+    <div class="container">
+        <canvas id="matrixCanvas" class="matrix-bg"></canvas>
+        <img id="mainLogo" src="https://upload.wikimedia.org/wikipedia/commons/e/e4/RKN_site_logo_%282013-2021%29.svg" alt="RKN Logo">
+    </div>
+
+    <div class="score-display">
+        <div id="score">0 RKN</div>
+        <div class="per-second">0 RKN/сек</div>
+    </div>
+
+    <div class="volume-controls">
+        <div class="volume-control">
+            <i class="fas fa-music"></i>
+            <input type="range" id="musicSlider" min="0" max="100" value="50">
+        </div>
+        <div class="volume-control">
+            <i class="fas fa-volume-up"></i>
+            <input type="range" id="effectsSlider" min="0" max="100" value="50">
+        </div>
+    </div>
+
+    <div class="bottom-menu">
+        <div class="hamburger" id="hamburgerBtn">
+            <i class="fas fa-bars fa-lg"></i>
+        </div>
+    </div>
+
+    <div class="menu-container" id="menuContainer">
+        <div class="tab-buttons">
+            <div class="tab-button active" data-tab="buildings">Здания</div>
+            <div class="tab-button" data-tab="upgrades">Апгрейды</div>
+        </div>
+        <div class="tab-content">
+            <div class="tab-panel active" id="buildings">
+                <!-- Buildings will be inserted here -->
+            </div>
+            <div class="tab-panel" id="upgrades">
+                <!-- Upgrades will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <audio id="clickSound" src="https://files.catbox.moe/r3deaw.m4a"></audio>
+    <audio id="backgroundMusic" loop src="https://files.catbox.moe/lzjnsm.mp3"></audio>
+
+    <script>
+        // Game state
+        let score = 0;
+        let clickPower = 1;
+        let totalPerSecond = 0;
+
+        // Audio elements
+        const clickSound = document.getElementById('clickSound');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const musicSlider = document.getElementById('musicSlider');
+        const effectsSlider = document.getElementById('effectsSlider');
+
+        // Buildings data
+        const buildings = [
+            { id: 'server', name: 'Сервер блокировок', baseCost: 15, baseIncome: 0.1, count: 0, description: 'Автоматически блокирует запрещенные сайты' },
+            { id: 'monitor', name: 'Центр мониторинга', baseCost: 100, baseIncome: 1, count: 0, description: 'Отслеживает нарушения в реальном времени' },
+            { id: 'dept', name: 'Отдел проверок', baseCost: 500, baseIncome: 5, count: 0, description: 'Проводит плановые проверки' },
+            { id: 'datacenter', name: 'Дата-центр', baseCost: 2000, baseIncome: 20, count: 0, description: 'Хранит данные о нарушениях' },
+            { id: 'ai', name: 'ИИ Надзиратель', baseCost: 10000, baseIncome: 100, count: 0, description: 'Автоматически находит нарушения' },
+            { id: 'quantum', name: 'Квантовый детектор', baseCost: 50000, baseIncome: 500, count: 0, description: 'Использует квантовые вычисления для поиска' },
+            { id: 'satellite', name: 'Спутник связи', baseCost: 200000, baseIncome: 2000, count: 0, description: 'Глобальный мониторинг из космоса' },
+            { id: 'timemachine', name: 'Машина времени', baseCost: 1000000, baseIncome: 10000, count: 0, description: 'Блокирует сайты ещё до их создания' }
+        ];
+
+        // Upgrades data
+        const upgrades = [
+            { id: 'click1', name: 'Усиленный клик', cost: 100, purchased: false, description: 'Удваивает силу клика', effect: () => { clickPower *= 2; } },
+            { id: 'click2', name: 'Мощный клик', cost: 1000, purchased: false, description: 'Утраивает силу клика', effect: () => { clickPower *= 3; } },
+            { id: 'server1', name: 'Оптимизация серверов', cost: 500, purchased: false, description: 'Удваивает эффективность серверов', effect: () => { multiplyBuildingIncome('server', 2); } },
+            { id: 'monitor1', name: 'ИИ для мониторинга', cost: 2000, purchased: false, description: 'Удваивает эффективность центров мониторинга', effect: () => { multiplyBuildingIncome('monitor', 2); } },
+            { id: 'dept1', name: 'Автоматизация проверок', cost: 5000, purchased: false, description: 'Удваивает эффективность отделов проверок', effect: () => { multiplyBuildingIncome('dept', 2); } },
+            { id: 'datacenter1', name: 'Квантовое хранилище', cost: 20000, purchased: false, description: 'Удваивает эффективность дата-центров', effect: () => { multiplyBuildingIncome('datacenter', 2); } },
+            { id: 'global1', name: 'Глобальное улучшение', cost: 50000, purchased: false, description: 'Увеличивает эффективность всех зданий на 50%', effect: () => { multiplyAllBuildingsIncome(1.5); } },
+            { id: 'click3', name: 'Суперклик', cost: 100000, purchased: false, description: 'Увеличивает силу клика в 5 раз', effect: () => { clickPower *= 5; } }
+        ];
+
+        // UI elements
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const mainLogo = document.getElementById('mainLogo');
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const menuContainer = document.getElementById('menuContainer');
+        const buildingsPanel = document.getElementById('buildings');
+        const upgradesPanel = document.getElementById('upgrades');
+        const scoreDisplay = document.querySelector('.score-display');
+        const scoreElement = document.getElementById('score');
+        const perSecondDisplay = document.querySelector('.per-second');
+
+        // Matrix effect setup
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+
+        const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%".split('');
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            drops.forEach((drop, i) => {
+                const text = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                ctx.fillText(text, i * fontSize, drop * fontSize);
+
+                if (drop * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            });
+        }
+
+        setInterval(drawMatrix, 50);
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Menu functionality
+        hamburgerBtn.addEventListener('click', () => {
+            menuContainer.classList.toggle('active');
+            scoreDisplay.classList.toggle('menu-opened');
+        });
+
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and panels
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding panel
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Game mechanics
+        function formatNumber(num) {
+            if (num >= 1e6) return (num/1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num/1e3).toFixed(1) + 'K';
+            return Math.floor(num);
+        }
+
+        function calculateBuildingCost(building) {
+            return building.baseCost * Math.pow(1.15, building.count);
+        }
+
+        function calculateIncome() {
+            totalPerSecond = buildings.reduce((sum, building) => {
+                return sum + (building.baseIncome * building.count);
+            }, 0);
+            perSecondDisplay.textContent = formatNumber(totalPerSecond) + ' RKN/сек';
+        }
+
+        function multiplyBuildingIncome(buildingId, multiplier) {
+            const building = buildings.find(b => b.id === buildingId);
+            if (building) {
+                building.baseIncome *= multiplier;
+                calculateIncome();
+            }
+        }
+
+        function multiplyAllBuildingsIncome(multiplier) {
+            buildings.forEach(building => {
+                building.baseIncome *= multiplier;
+            });
+            calculateIncome();
+        }
+
+        function createFloatingNumber(x, y, amount) {
+            const el = document.createElement('div');
+            el.className = 'floating-number';
+            el.textContent = '+' + formatNumber(amount);
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function updateScore(amount) {
+            score += amount;
+            scoreElement.textContent = formatNumber(score) + ' RKN';
+            updateShop();
+        }
+
+        // Shop rendering
+        function renderBuildings() {
+            buildingsPanel.innerHTML = buildings.map(building => `
+                <div class="item" data-id="${building.id}" data-type="building">
+                    <div class="item-header">
+                        <span class="item-name">${building.name}</span>
+                        <span class="item-count">${building.count}</span>
+                    </div>
+                    <div class="item-cost">${formatNumber(calculateBuildingCost(building))} RKN</div>
+                    <div class="item-description">${building.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderUpgrades() {
+            upgradesPanel.innerHTML = upgrades.filter(upgrade => !upgrade.purchased).map(upgrade => `
+                <div class="item" data-id="${upgrade.id}" data-type="upgrade">
+                    <div class="item-header">
+                        <span class="item-name">${upgrade.name}</span>
+                    </div>
+                    <div class="item-cost">${formatNumber(upgrade.cost)} RKN</div>
+                    <div class="item-description">${upgrade.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateShop() {
+            renderBuildings();
+            renderUpgrades();
+        }
+
+        // Event handlers
+        mainLogo.addEventListener('click', (e) => {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            updateScore(clickPower);
+            createFloatingNumber(e.clientX, e.clientY, clickPower);
+        });
+
+        document.querySelector('.tab-content').addEventListener('click', (e) => {
+            const item = e.target.closest('.item');
+            if (!item) return;
+
+            if (item.dataset.type === 'building') {
+                const building = buildings.find(b => b.id === item.dataset.id);
+                const cost = calculateBuildingCost(building);
+                
+                if (score >= cost) {
+                    score -= cost;
+                    building.count++;
+                    calculateIncome();
+                    updateScore(0);
+                }
+            } else if (item.dataset.type === 'upgrade') {
+                const upgrade = upgrades.find(u => u.id === item.dataset.id);
+                
+                if (score >= upgrade.cost && !upgrade.purchased) {
+                    score -= upgrade.cost;
+                    upgrade.purchased = true;
+                    upgrade.effect();
+                    calculateIncome();
+                    updateShop();
+                }
+            }
+        });
+
+        // Volume controls
+        musicSlider.addEventListener('input', (e) => {
+            backgroundMusic.volume = e.target.value / 100;
+        });
+
+        effectsSlider.addEventListener('input', (e) => {
+            clickSound.volume = e.target.value / 100;
+        });
+
+        // Welcome screen
+        welcomeScreen.addEventListener('click', () => {
+            welcomeScreen.style.display = 'none';
+            backgroundMusic.play();
+            
+            // Start game loop
+            setInterval(() => {
+                updateScore(totalPerSecond / 10);
+            }, 100);
+        });
+
+        // Initial setup
+        backgroundMusic.volume = 0.5;
+        clickSound.volume = 0.5;
+        updateShop();
+        calculateIncome();
+    </script>
+</body>
+</html>
